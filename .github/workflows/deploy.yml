@@ -43,23 +43,15 @@ jobs:
       # Step 6: Deploy on EC2
       - name: Deploy on EC2
         env:
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          DB_PORT: ${{ secrets.DB_PORT }}
           DB_URL: ${{ secrets.DB_URL }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           PORT: ${{ secrets.PORT }}
           TOKEN: ${{ secrets.TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 '
-            # --- Export variables ---
-            export ADMIN_PASSWORD='"$ADMIN_PASSWORD"'
-            export DB_PORT='"$DB_PORT"'
-            export DB_URL='"$DB_URL"'
-            export EMAIL_PASS='"$EMAIL_PASS"'
-            export EMAIL_USER='"$EMAIL_USER"'
-            export PORT='"$PORT"'
-
             # --- Install Git and Docker ---
             if ! command -v git &> /dev/null; then
               sudo yum update -y
@@ -86,28 +78,20 @@ jobs:
 
             # --- Build Docker image ---
             docker build \
-              --build-arg ADMIN_PASSWORD=$ADMIN_PASSWORD \
-              --build-arg DB_PORT=$DB_PORT \
-              --build-arg DB_URL=$DB_URL \
-              --build-arg EMAIL_PASS=$EMAIL_PASS \
-              --build-arg EMAIL_USER=$EMAIL_USER \
-              --build-arg PORT=$PORT \
               -t myapp:latest .
 
-            # --- Stop old container if running ---
+            # --- Stop old container ---
             docker stop myapp || true
             docker rm myapp || true
-
-            # --- Remove dangling images ---
             docker image prune -f
 
-            # --- Run new container with environment variables ---
+            # --- Run container with secrets directly from GitHub ---
             docker run -d --name myapp -p $PORT:$PORT \
-              -e ADMIN_PASSWORD=$ADMIN_PASSWORD \
-              -e DB_PORT=$DB_PORT \
-              -e DB_URL=$DB_URL \
-              -e EMAIL_PASS=$EMAIL_PASS \
-              -e EMAIL_USER=$EMAIL_USER \
-              -e PORT=$PORT \
+              -e DB_URL="${DB_URL}" \
+              -e DB_PORT="${DB_PORT}" \
+              -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+              -e EMAIL_USER="${EMAIL_USER}" \
+              -e EMAIL_PASS="${EMAIL_PASS}" \
+              -e PORT="${PORT}" \
               myapp:latest
           '
