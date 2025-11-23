@@ -87,6 +87,7 @@ jobs:
 
             # --- Run container with secrets directly from GitHub ---
             docker run -d --name myapp -p $PORT:$PORT \
+              -e PORT=$PORT \
               -e DB_URL="${DB_URL}" \
               -e DB_PORT="${DB_PORT}" \
               -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
