@@ -3,20 +3,25 @@ name: CI/CD Deploy to EC2 with Docker
 on:
   push:
     branches:
-      - main
+      - main  # deploy automatically on main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Setup SSH with your EC2 key
+      # 1️⃣ Checkout your workflow repository (optional, for workflow context)
+      - name: Checkout workflow
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup SSH agent with your EC2 private key
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+          ssh-private-key: |
+            ${{ secrets.EC2_SSH_KEY }}
 
-      # 2️⃣ Deploy and build Docker on EC2
+      # 3️⃣ Deploy on EC2
       - name: Deploy on EC2
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
@@ -26,32 +31,52 @@ jobs:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           PORT: ${{ secrets.PORT }}
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 '
+          ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 "
+            # --- Install Git and Docker if missing ---
+            if ! command -v git &> /dev/null; then
+              sudo yum update -y
+              sudo yum install git -y
+            fi
+            if ! command -v docker &> /dev/null; then
+              sudo amazon-linux-extras install docker -y
+              sudo service docker start
+              sudo usermod -a -G docker ec2-user
+            fi
+
+            # --- Create app folder ---
             mkdir -p /home/ec2-user/myapp
             cd /home/ec2-user/myapp
 
-            # Clone repo if folder empty, else pull latest
-            if [ -z "$(ls -A /home/ec2-user/myapp)" ]; then
-              git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
+            # --- Clone repo if empty, else pull latest ---
+            if [ -z \"\$(ls -A /home/ec2-user/myapp)\" ]; then
+              git clone git@github.com:YOUR_USERNAME/YOUR_REPO.git .
             else
               git reset --hard
               git pull
             fi
 
-            # Build Docker image with build args
+            # --- Export secrets for Docker build ---
+            export ADMIN_PASSWORD=$ADMIN_PASSWORD
+            export DB_PORT=$DB_PORT
+            export DB_URL=$DB_URL
+            export EMAIL_PASS=$EMAIL_PASS
+            export EMAIL_USER=$EMAIL_USER
+            export PORT=$PORT
+
+            # --- Build Docker image ---
             docker build \
-              --build-arg ADMIN_PASSWORD=$ADMIN_PASSWORD \
-              --build-arg DB_PORT=$DB_PORT \
-              --build-arg DB_URL=$DB_URL \
-              --build-arg EMAIL_PASS=$EMAIL_PASS \
-              --build-arg EMAIL_USER=$EMAIL_USER \
-              --build-arg PORT=$PORT \
+              --build-arg ADMIN_PASSWORD=\$ADMIN_PASSWORD \
+              --build-arg DB_PORT=\$DB_PORT \
+              --build-arg DB_URL=\$DB_URL \
+              --build-arg EMAIL_PASS=\$EMAIL_PASS \
+              --build-arg EMAIL_USER=\$EMAIL_USER \
+              --build-arg PORT=\$PORT \
               -t myapp:latest .
 
-            # Stop old container if running
+            # --- Stop old container if running ---
             docker stop myapp || true
             docker rm myapp || true
 
-            # Run new container
-            docker run -d --name myapp -p $PORT:$PORT myapp:latest
-          '
+            # --- Run new container ---
+            docker run -d --name myapp -p \$PORT:\$PORT myapp:latest
+          "
