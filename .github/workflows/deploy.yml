@@ -49,7 +49,7 @@ jobs:
 
             # --- Clone repo if empty, else pull latest ---
             if [ -z \"\$(ls -A /home/ec2-user/myapp)\" ]; then
-              git clone git@github.com:david666999/backend.git .
+              git clone https://$GITHUB_TOKEN@github.com/david666999/backend.git .
             else
               git reset --hard
               git pull
