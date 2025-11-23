@@ -51,14 +51,14 @@ jobs:
           PORT: ${{ secrets.PORT }}
           TOKEN: ${{ secrets.TOKEN }}
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 '
+          ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 "
             # --- Export variables ---
-            export ADMIN_PASSWORD='"$ADMIN_PASSWORD"'
-            export DB_PORT='"$DB_PORT"'
-            export DB_URL='"$DB_URL"'
-            export EMAIL_PASS='"$EMAIL_PASS"'
-            export EMAIL_USER='"$EMAIL_USER"'
-            export PORT='"$PORT"'
+            export ADMIN_PASSWORD='$ADMIN_PASSWORD'
+            export DB_PORT='$DB_PORT'
+            export DB_URL='$DB_URL'
+            export EMAIL_PASS='$EMAIL_PASS'
+            export EMAIL_USER='$EMAIL_USER'
+            export PORT='$PORT'
 
             # --- Install Git and Docker ---
             if ! command -v git &> /dev/null; then
@@ -77,7 +77,7 @@ jobs:
             cd /home/ec2-user/myapp
 
             # --- Clone repo if empty, else pull latest ---
-            if [ -z "$(ls -A /home/ec2-user/myapp)" ]; then
+            if [ -z \"\$(ls -A /home/ec2-user/myapp)\" ]; then
               git clone https://$TOKEN@github.com/davo999666/backend.git .
             else
               git reset --hard
@@ -110,4 +110,4 @@ jobs:
               -e EMAIL_USER=$EMAIL_USER \
               -e PORT=$PORT \
               myapp:latest
-          '
+          "
