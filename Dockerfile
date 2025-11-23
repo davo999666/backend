@@ -11,7 +11,7 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
-# Build arguments (passed from GitHub Actions)
+# Optional: Build arguments (can pass if needed, but ENV will be set at runtime)
 ARG ADMIN_PASSWORD
 ARG DB_PORT
 ARG DB_URL
@@ -19,19 +19,8 @@ ARG EMAIL_PASS
 ARG EMAIL_USER
 ARG PORT
 
-# Set environment variables inside the container
-ENV ADMIN_PASSWORD=$ADMIN_PASSWORD
-ENV DB_PORT=$DB_PORT
-ENV DB_URL=$DB_URL
-ENV EMAIL_PASS=$EMAIL_PASS
-ENV EMAIL_USER=$EMAIL_USER
-ENV PORT=$PORT
+# Expose the app port (default 3000 if PORT not set at runtime)
+EXPOSE ${PORT:-3000}
 
-# Run tests during build (optional)
-RUN npm test
-
-# Expose app port
-EXPOSE $PORT
-
-# Command to run the server
+# Start the application
 CMD ["node", "server.js"]
