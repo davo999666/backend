@@ -40,6 +40,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+
+      - name: Check env variables
+        run: |
+          echo "DB_URL=${{ secrets.DB_URL }}"
+          echo "DB_PORT=${{ secrets.DB_PORT }}"
+          echo "PORT=${{ secrets.PORT }}"
+
       # Step 6: Deploy on EC2
       - name: Deploy on EC2
         env:
