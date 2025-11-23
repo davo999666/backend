@@ -27,11 +27,17 @@ jobs:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           PORT: ${{ secrets.PORT }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ secrets.TOKEN }}   # <-- updated to match your secret
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 "
-            # --- Export GitHub token ---
-            export GITHUB_TOKEN=${GITHUB_TOKEN}
+            # --- Export secrets ---
+            export GITHUB_TOKEN=${TOKEN}  # <-- use TOKEN value here
+            export ADMIN_PASSWORD=${ADMIN_PASSWORD}
+            export DB_PORT=${DB_PORT}
+            export DB_URL=${DB_URL}
+            export EMAIL_PASS=${EMAIL_PASS}
+            export EMAIL_USER=${EMAIL_USER}
+            export PORT=${PORT}
 
             # --- Install Git and Docker if missing ---
             if ! command -v git &> /dev/null; then
@@ -55,14 +61,6 @@ jobs:
               git reset --hard
               git pull
             fi
-
-            # --- Export secrets for Docker build ---
-            export ADMIN_PASSWORD=\$ADMIN_PASSWORD
-            export DB_PORT=\$DB_PORT
-            export DB_URL=\$DB_URL
-            export EMAIL_PASS=\$EMAIL_PASS
-            export EMAIL_USER=\$EMAIL_USER
-            export PORT=\$PORT
 
             # --- Build Docker image ---
             docker build \
