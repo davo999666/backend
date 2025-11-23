@@ -96,6 +96,8 @@ jobs:
             # --- Stop old container if running ---
             docker stop myapp || true
             docker rm myapp || true
+            # --- Remove dangling images ---
+            docker image prune -f
 
             # --- Run new container with env variables ---
             docker run -d \
