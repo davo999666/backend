@@ -1,0 +1,46 @@
+name: CI/CD Node.js Docker to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-backend-app .
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.SECRET_KEY_SSH }}
+
+      - name: Deploy Docker container to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@<EC2_PUBLIC_IP> << 'EOF'
+            # Stop previous container if exists
+            docker rm -f my-backend-app || true
+          
+            # Pull latest code
+            cd /home/ec2-user/<repo>
+            git pull origin main
+          
+            # Build new image and run
+            docker build -t my-backend-app .
+            docker run -d -p 3000:3000 --name my-backend-app my-backend-app
+          EOF
