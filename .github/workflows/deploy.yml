@@ -52,15 +52,13 @@ jobs:
           TOKEN: ${{ secrets.TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 "
-            # --- Export variables ---
-            export ADMIN_PASSWORD='$ADMIN_PASSWORD'
-            export DB_PORT='$DB_PORT'
-            export DB_URL='$DB_URL'
-            export EMAIL_PASS='$EMAIL_PASS'
-            export EMAIL_USER='$EMAIL_USER'
-            export PORT='$PORT'
+            export ADMIN_PASSWORD=\"\$ADMIN_PASSWORD\"
+            export DB_PORT=\"\$DB_PORT\"
+            export DB_URL=\"\$DB_URL\"
+            export EMAIL_PASS=\"\$EMAIL_PASS\"
+            export EMAIL_USER=\"\$EMAIL_USER\"
+            export PORT=\"\$PORT\"
 
-            # --- Install Git and Docker ---
             if ! command -v git &> /dev/null; then
               sudo yum update -y
               sudo yum install git -y
@@ -72,42 +70,35 @@ jobs:
               sudo usermod -a -G docker ec2-user
             fi
 
-            # --- Create app folder ---
             mkdir -p /home/ec2-user/myapp
             cd /home/ec2-user/myapp
 
-            # --- Clone repo if empty, else pull latest ---
             if [ -z \"\$(ls -A /home/ec2-user/myapp)\" ]; then
-              git clone https://$TOKEN@github.com/davo999666/backend.git .
+              git clone https://\$TOKEN@github.com/davo999666/backend.git .
             else
               git reset --hard
               git pull
             fi
 
-            # --- Build Docker image ---
             docker build \
-              --build-arg ADMIN_PASSWORD=$ADMIN_PASSWORD \
-              --build-arg DB_PORT=$DB_PORT \
-              --build-arg DB_URL=$DB_URL \
-              --build-arg EMAIL_PASS=$EMAIL_PASS \
-              --build-arg EMAIL_USER=$EMAIL_USER \
-              --build-arg PORT=$PORT \
+              --build-arg ADMIN_PASSWORD=\"\$ADMIN_PASSWORD\" \
+              --build-arg DB_PORT=\"\$DB_PORT\" \
+              --build-arg DB_URL=\"\$DB_URL\" \
+              --build-arg EMAIL_PASS=\"\$EMAIL_PASS\" \
+              --build-arg EMAIL_USER=\"\$EMAIL_USER\" \
+              --build-arg PORT=\"\$PORT\" \
               -t myapp:latest .
 
-            # --- Stop old container if running ---
             docker stop myapp || true
             docker rm myapp || true
-
-            # --- Remove dangling images ---
             docker image prune -f
 
-            # --- Run new container with environment variables ---
-            docker run -d --name myapp -p $PORT:$PORT \
-              -e ADMIN_PASSWORD=$ADMIN_PASSWORD \
-              -e DB_PORT=$DB_PORT \
-              -e DB_URL=$DB_URL \
-              -e EMAIL_PASS=$EMAIL_PASS \
-              -e EMAIL_USER=$EMAIL_USER \
-              -e PORT=$PORT \
+            docker run -d --name myapp -p \$PORT:\$PORT \
+              -e ADMIN_PASSWORD=\"\$ADMIN_PASSWORD\" \
+              -e DB_PORT=\"\$DB_PORT\" \
+              -e DB_URL=\"\$DB_URL\" \
+              -e EMAIL_PASS=\"\$EMAIL_PASS\" \
+              -e EMAIL_USER=\"\$EMAIL_USER\" \
+              -e PORT=\"\$PORT\" \
               myapp:latest
           "
