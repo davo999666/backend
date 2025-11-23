@@ -1,46 +1,51 @@
-name: CI/CD Node.js Docker to EC2
+name: CI/CD Deploy to EC2 with Docker
 
 on:
   push:
     branches:
-      - main
+      - main  # Deploy when pushing to main branch
 
 jobs:
-  build-test-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Build Docker image
-        run: |
-          docker build -t my-backend-app .
-
+      # 1️⃣ Setup SSH with your EC2 key
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.8.1
         with:
-          ssh-private-key: ${{ secrets.SECRET_KEY_SSH }}
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Deploy Docker container to EC2
+      # 2️⃣ Deploy and build Docker on EC2
+      - name: Deploy on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@<EC2_PUBLIC_IP> << 'EOF'
-            # Stop previous container if exists
-            docker rm -f my-backend-app || true
-          
-            # Pull latest code
-            cd /home/ec2-user/<repo>
-            git pull origin main
-          
-            # Build new image and run
-            docker build -t my-backend-app .
-            docker run -d -p 3000:3000 --name my-backend-app my-backend-app
-          EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@YOUR_EC2_IP "
+            # Create app directory if not exists
+            mkdir -p /home/ubuntu/myapp
+            cd /home/ubuntu/myapp
+
+            # Clone repo if folder empty, else pull latest
+            if [ -z \"\$(ls -A /home/ubuntu/myapp)\" ]; then
+              git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
+            else
+              git reset --hard
+              git pull
+            fi
+
+            # Build Docker image with secrets
+            docker build \
+              --build-arg ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+              --build-arg DB_PORT=${{ secrets.DB_PORT }} \
+              --build-arg DB_URL=${{ secrets.DB_URL }} \
+              --build-arg EMAIL_PASS=${{ secrets.EMAIL_PASS }} \
+              --build-arg EMAIL_USER=${{ secrets.EMAIL_USER }} \
+              --build-arg PORT=${{ secrets.PORT }} \
+              -t myapp:latest .
+
+            # Stop old container if running
+            docker stop myapp || true
+            docker rm myapp || true
+
+            # Run new container
+            docker run -d --name myapp -p ${{ secrets.PORT }}:${{ secrets.PORT }} myapp:latest
+          "
