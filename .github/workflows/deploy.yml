@@ -19,7 +19,7 @@ jobs:
       # 2️⃣ Deploy and build Docker on EC2
       - name: Deploy on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@YOUR_EC2_IP "
+          ssh -o StrictHostKeyChecking=no ubuntu@3.239.93.96 "
             # Create app directory if not exists
             mkdir -p /home/ubuntu/myapp
             cd /home/ubuntu/myapp
