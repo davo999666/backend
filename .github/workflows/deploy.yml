@@ -34,12 +34,13 @@ jobs:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
         run: npm test
 
-      # Step 5: Deploy to EC2 only if tests pass
+      # Step 5: Setup SSH
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+      # Step 6: Deploy on EC2
       - name: Deploy on EC2
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
@@ -51,7 +52,15 @@ jobs:
           TOKEN: ${{ secrets.TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 "
-            # Install Git and Docker
+            # --- Export variables ---
+            export ADMIN_PASSWORD=${ADMIN_PASSWORD}
+            export DB_PORT=${DB_PORT}
+            export DB_URL=${DB_URL}
+            export EMAIL_PASS=${EMAIL_PASS}
+            export EMAIL_USER=${EMAIL_USER}
+            export PORT=${PORT}
+
+            # --- Install Git and Docker ---
             if ! command -v git &> /dev/null; then
               sudo yum update -y
               sudo yum install git -y
@@ -62,11 +71,11 @@ jobs:
               sudo usermod -a -G docker ec2-user
             fi
 
-            # Create app folder
+            # --- Create app folder ---
             mkdir -p /home/ec2-user/myapp
             cd /home/ec2-user/myapp
 
-            # Clone repo if empty, else pull latest
+            # --- Clone repo if empty, else pull latest ---
             if [ -z \"\$(ls -A /home/ec2-user/myapp)\" ]; then
               git clone https://\${TOKEN}@github.com/davo999666/backend.git .
             else
@@ -74,7 +83,7 @@ jobs:
               git pull
             fi
 
-            # Build Docker image
+            # --- Build Docker image ---
             docker build \
               --build-arg ADMIN_PASSWORD=\$ADMIN_PASSWORD \
               --build-arg DB_PORT=\$DB_PORT \
@@ -84,10 +93,19 @@ jobs:
               --build-arg PORT=\$PORT \
               -t myapp:latest .
 
-            # Stop old container if running
+            # --- Stop old container if running ---
             docker stop myapp || true
             docker rm myapp || true
 
-            # Run new container
-            docker run -d --name myapp -p \$PORT:\$PORT myapp:latest
+            # --- Run new container with env variables ---
+            docker run -d \
+              --name myapp \
+              -p \$PORT:\$PORT \
+              -e ADMIN_PASSWORD=\$ADMIN_PASSWORD \
+              -e DB_PORT=\$DB_PORT \
+              -e DB_URL=\$DB_URL \
+              -e EMAIL_PASS=\$EMAIL_PASS \
+              -e EMAIL_USER=\$EMAIL_USER \
+              -e PORT=\$PORT \
+              myapp:latest
           "
