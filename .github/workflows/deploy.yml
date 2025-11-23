@@ -84,28 +84,19 @@ jobs:
             fi
 
             # --- Build Docker image ---
-            docker build \
-              --build-arg ADMIN_PASSWORD=\$ADMIN_PASSWORD \
-              --build-arg DB_PORT=\$DB_PORT \
-              --build-arg DB_URL=\$DB_URL \
-              --build-arg EMAIL_PASS=\$EMAIL_PASS \
-              --build-arg EMAIL_USER=\$EMAIL_USER \
-              --build-arg PORT=\$PORT \
-              -t myapp:latest .
+            docker build -t myapp:latest .
 
             # --- Stop old container if running ---
             docker stop myapp || true
             docker rm myapp || true
 
-            # --- Run new container with env variables ---
-            docker run -d \
-              --name myapp \
-              -p \$PORT:\$PORT \
-              -e ADMIN_PASSWORD=\$ADMIN_PASSWORD \
-              -e DB_PORT=\$DB_PORT \
-              -e DB_URL=\$DB_URL \
-              -e EMAIL_PASS=\$EMAIL_PASS \
-              -e EMAIL_USER=\$EMAIL_USER \
-              -e PORT=\$PORT \
+            # --- Run new container with environment variables ---
+            docker run -d --name myapp -p ${PORT}:${PORT} \
+              -e ADMIN_PASSWORD=${ADMIN_PASSWORD} \
+              -e DB_PORT=${DB_PORT} \
+              -e DB_URL=${DB_URL} \
+              -e EMAIL_PASS=${EMAIL_PASS} \
+              -e EMAIL_USER=${EMAIL_USER} \
+              -e PORT=${PORT} \
               myapp:latest
           "
