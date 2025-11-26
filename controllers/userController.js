@@ -1,7 +1,21 @@
 import {userService} from "../services/userService.js";
 
 
+
+
 class UserController {
+    async googleLogin(req, res, next) {
+        try {
+            const { googleToken } = req.body; // must match frontend key
+            if (!googleToken) throw new Error("Token is missing");
+            const userData = await userService.googleLogin(googleToken); // decode & verify
+            return  res.json(userData);
+        } catch (err) {
+            console.error(err);
+            next(err)
+        }
+
+    }
     async verification(req, res, next) {
         try {
             const user = await userService.verify(req.body);

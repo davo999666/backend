@@ -1,11 +1,15 @@
 import stationRepo from "../repositories/stationRepository.js";
+import { getSocketManager } from "../socket/index.js";
 
 class StationService {
     async addStation(data) {
         if (!data.city || !data.address || !data.latitude || !data.longitude) {
             throw new Error("Missing required station fields");
         }
-        return stationRepo.create(data);
+        const socketManager = getSocketManager();
+        const newStation = await stationRepo.create(data);
+        socketManager.broadcastStationCreated(newStation);
+        return newStation
     }
 
     async updateStation(id, restData) {
@@ -14,7 +18,10 @@ class StationService {
         }
         // Merge array of objects into one object
         const updates = restData.reduce((acc, item) => ({ ...acc, ...item }), {});
-        return await stationRepo.updateById(id, updates);
+        const updatedStation = await stationRepo.updateById(id, updates);
+        const socketManager = getSocketManager();
+        await socketManager.broadcastStationUpdated(updatedStation);
+        return updatedStation;
     }
     async getAllStationsUser() {
         return await stationRepo.findAll();
@@ -34,7 +41,8 @@ class StationService {
         if (!existing) {
             throw new Error("Station not found");
         }
-
+        const socketManager = getSocketManager();
+        socketManager.broadcastStationDeleted(existing.id.toString());
         await stationRepo.deleteById(id);
         return { message: "Station deleted" };
     }

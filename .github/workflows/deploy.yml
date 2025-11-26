@@ -58,7 +58,7 @@ jobs:
           PORT: ${{ secrets.PORT }}
           TOKEN: ${{ secrets.TOKEN }}
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@3.239.93.96 "
+          ssh -o StrictHostKeyChecking=no ec2-user@44.222.133.75 "
             # --- Export variables ---
             export ADMIN_PASSWORD=\"$ADMIN_PASSWORD\"
             export DB_PORT=\"$DB_PORT\"

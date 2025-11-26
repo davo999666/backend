@@ -20,8 +20,11 @@ describe("User endpoints integration", () => {
 
     beforeAll(async () => {
         jest.setTimeout(30000); // longer timeout for DB
-        app = createServer();
-        server = app.listen(); // start server
+
+        const result = createServer();
+        app = result.app;       // Express app for supertest
+        server = result.server; // HTTP server for closing after tests
+
         await User.destroy({ where: { login: "testUser" } });
 
         const password_hash = await createHash("1234");
@@ -33,8 +36,6 @@ describe("User endpoints integration", () => {
             role: "user",
             password_hash
         });
-
-
     });
 
     afterAll(async () => {
@@ -95,6 +96,39 @@ describe("User endpoints integration", () => {
         const verifiedUser = await User.findOne({ where: { login: "verifyUser" } });
         if (verifiedUser) await verifiedUser.destroy();
     });
+    // it("POST /users/verification should fail if email already exists", async () => {
+    //     const code = "8888";
+    //
+    //     // Insert user manually to DB
+    //     await User.create({
+    //         login: "existingUser",
+    //         fullName: "Existing User",
+    //         email: "existing@example.com",
+    //         phone: "1234567890",
+    //         password_hash: await createHash("1234"),
+    //         role: "user"
+    //     });
+    //
+    //     // Set pending verification in cache
+    //     cache.set(`pending:existing@example.com`, {
+    //         login: "existingUser",
+    //         fullName: "Existing User",
+    //         email: "existing@example.com",
+    //         phone: "1234567890",
+    //         password_hash: await createHash("1234"),
+    //         code
+    //     });
+    //
+    //     const res = await request(app)
+    //         .post("/users/verification")
+    //         .send({ email: "existing@example.com", code });
+    //
+    //     expect(res.status).toBe(400); // or whatever your error handler returns
+    //     expect(res.body.message).toMatch(/email must be unique/);
+    //
+    //     const user = await User.findOne({ where: { email: "existing@example.com" } });
+    //     if (user) await user.destroy();
+    // });
 
     it("PATCH /users/reset-password should update password", async () => {
         const login = testUser.login;
